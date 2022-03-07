@@ -1,216 +1,185 @@
-Description: >-
-  Cloudformation template to deploy a VPC's
 Parameters:
-  EnvironmentName:
-    Description: An environment name that is prefixed to resource names
+  VpcName:
+    Description: VPC Name
     Type: String
+    Default: myVPC1
+
   VpcCIDR:
-    Description: Please enter the IP range (CIDR notation) for this VPC
+    Description: IP Range (CIDR Notation) for VPC
     Type: String
-    Default: 10.0.0.0/16
-  PublicSubnet1CIDR:
-    Description: >-
-      Please enter the IP range (CIDR notation) for the public subnet in the
-      first Availability Zone
+    Default: 10.10.0.0/16
+
+  # Creating 3 subnets (Each for different AZ)
+  Subnet1CIDR:
+    Description: Enter the IP Range (CIDR Notation) for the subnet in AZ 1
     Type: String
-    Default: 10.0.1.0/24
-  PublicSubnet2CIDR:
-    Description: >-
-      Please enter the IP range (CIDR notation) for the public subnet in the
-      second Availability Zone
+    Default: 10.10.1.0/24
+
+  Subnet2CIDR:
+    Description: Enter the IP Range (CIDR Notation) for the subnet in AZ 2
     Type: String
-    Default: 10.0.2.0/24
-  PublicSubnet3CIDR:
-    Description: >-
-      Please enter the IP range (CIDR notation) for the public subnet in the
-      third Availability Zone
+    Default: 10.10.2.0/24
+
+  Subnet3CIDR:
+    Description: Enter the IP Range (CIDR Notation) for the subnet in AZ 3
     Type: String
-    Default: 10.0.3.0/24
-  AMIImageId:
-    Description: Please enter the AMI ImageId
+    Default: 10.10.3.0/24
+
+  AMI:
+    Description: "AMI for Instance"
     Type: String
-    Default: ami-02fe57fa7a6d4b795
+
+  KeyName:
+    Description: "Key Name for Instance"
+    Type: String
+
+
 Resources:
+  # Create a VPC
   VPC:
-    Type: 'AWS::EC2::VPC'
+    Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref VpcCIDR
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
-        - Key: Name
-          Value: !Ref EnvironmentName
+      - Key: Name
+        Value: !Ref VpcName
 
+  # Create an Internet Gateway
   InternetGateway:
-    Type: 'AWS::EC2::InternetGateway'
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Ref EnvironmentName
+    Type: AWS::EC2::InternetGateway
 
-  InternetGatewayAttachment:
-    Type: 'AWS::EC2::VPCGatewayAttachment'
-    Properties:
+  # Attach the Internet Gateway to VPC
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties: 
+      VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref VPC
 
-  PublicSubnet1:
-    Type: 'AWS::EC2::Subnet'
-    DependsOn: VPC
+  # Create a public route table for the VPC
+  RouteTable:
+    Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: !Select 
-        - 0
-        - !GetAZs ''
-      CidrBlock: !Ref PublicSubnet1CIDR
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${EnvironmentName} Public Subnet (AZ1)'
+      Tags: 
+      - Key: Name
+        Value: RouteTable
 
-  PublicSubnet2:
-    Type: 'AWS::EC2::Subnet'
-    DependsOn: VPC
+  # Add routes in the route table
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
     Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select 
-        - 1
-        - !GetAZs ''
-      CidrBlock: !Ref PublicSubnet2CIDR
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${EnvironmentName} Public Subnet (AZ2)'
-
-  PublicSubnet3:
-    Type: 'AWS::EC2::Subnet'
-    DependsOn: VPC
-    Properties:
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select 
-        - 2
-        - !GetAZs ''
-      CidrBlock: !Ref PublicSubnet3CIDR
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${EnvironmentName} Public Subnet (AZ2)'
-
-  PublicRouteTable:
-    Type: 'AWS::EC2::RouteTable'
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub '${EnvironmentName} Public Routes'
-
-  DefaultPublicRoute:
-    Type: 'AWS::EC2::Route'
-    DependsOn: InternetGatewayAttachment
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
+      RouteTableId: !Ref RouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  PublicSubnet1RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+  # Create a subnet in AZ 1
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
     Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicSubnet1
-  PublicSubnet2RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicSubnet2
-  PublicSubnet3RouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref PublicSubnet3
-  ApplicationSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Allow http to client host
       VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 3306
-          ToPort: 3306
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 4000
-          ToPort: 4000
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 3306
-          ToPort: 3306
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 4000
-          ToPort: 4000
-          CidrIp: 0.0.0.0/0
+      AvailabilityZone: !Select [0, !GetAZs ''] # AZ 1
+      CidrBlock: !Ref Subnet1CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: Subnet1
 
-  MyEC2Instance:
-    Type: 'AWS::EC2::Instance'
+  # Create a subnet in AZ 2
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
     Properties:
-      ImageId: !Ref AMIImageId
-      KeyName: testkey
-      InstanceType: t2.micro
-      DisableApiTermination: 'false'
-      SubnetId: !Ref PublicSubnet1
-      SecurityGroupIds:
-        - Fn::GetAtt:
-          - ApplicationSecurityGroup
-          - GroupId
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp2
-            DeleteOnTermination: 'true'
-            VolumeSize: '20'
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ''] # AZ 2
+      CidrBlock: !Ref Subnet2CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: Subnet2
 
-Outputs:
-  VPC:
-    Description: A reference to the created VPC
-    Value: !Ref VPC
-  PublicSubnets:
-    Description: A list of the public subnets
-    Value: !Join 
-      - ','
-      - - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-        - !Ref PublicSubnet3
-  PublicSubnet1:
-    Description: A reference to the public subnet in the 1st Availability Zone
-    Value: !Ref PublicSubnet1
-  PublicSubnet2:
-    Description: A reference to the public subnet in the 2nd Availability Zone
-    Value: !Ref PublicSubnet2
-  PublicSubnet3:
-    Description: A reference to the public subnet in the 3rd Availability Zone
-    Value: !Ref PublicSubnet3
+  # Create a subnet in AZ 3
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [2, !GetAZs ''] # AZ 3
+      CidrBlock: !Ref Subnet3CIDR
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: Subnet3
+
+  # Associate Route Table with subnet in AZ 1
+  Subnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref Subnet1
+
+  # Associate Route Table with subnet in AZ 2
+  Subnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref Subnet2
+
+  # Associate Route Table with subnet in AZ 3
+  Subnet3RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref Subnet3
+
+  # Adding a security group - Application
+  Application:
+   Type: AWS::EC2::SecurityGroup
+   Properties:
+      GroupDescription: Base Security Group
+      SecurityGroupIngress:
+         - IpProtocol: tcp
+           CidrIp: 0.0.0.0/0
+           FromPort: 22
+           ToPort: 22
+         - IpProtocol: tcp
+           CidrIp: 0.0.0.0/0
+           FromPort: 80
+           ToPort: 80
+         - IpProtocol: tcp
+           CidrIp: 0.0.0.0/0
+           FromPort: 443
+           ToPort: 443
+         - IpProtocol: tcp
+           CidrIp: 0.0.0.0/0
+           FromPort: 3000
+           ToPort: 3000
+         - IpProtocol: tcp
+           CidrIp: 0.0.0.0/0
+           FromPort: 3306
+           ToPort: 3306
+      VpcId: !Ref VPC
+
+  # Adding a EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMI
+      KeyName: !Ref KeyName
+      InstanceType: "t2.micro"
+      BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            VolumeType: "gp2"
+            DeleteOnTermination: "false"
+            VolumeSize: "60"
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeleteOnTermination: "true"
+          SubnetId: !Ref Subnet1
+          DeviceIndex: "0"
+          GroupSet: 
+            - !Ref Application
