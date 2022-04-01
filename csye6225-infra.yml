@@ -1,86 +1,106 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "AWS CloudFormation Template"
+Description: "CloudFormation Template"
 Parameters:
   VpcCidrBlock:
     Description: "CIDR Block for VPC"
     Type: String
     Default: "10.0.0.0/16"
+
   VpcSubnetCidrBlocks: 
     Description: "List of CIDR blocks"
     Type: CommaDelimitedList
-    Default: "10.0.10.0/24, 10.0.11.0/24, 10.0.12.0/24, 10.0.13.0/24, 10.0.14.0/24, 10.0.15.0/24"
+    Default: "10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24, 10.0.4.0/24, 10.0.5.0/24, 10.0.6.0/24"
+
   VpcSubnetAvailabilityZones: 
     Description: "List of Availability Zones"
     Type: CommaDelimitedList
     Default: "us-east-1a, us-east-1b, us-east-1c"
+
   PublicRouteDestinationCidrBlock:
     Description: "CIDR Block for Public Route"
     Type: String
     Default: "0.0.0.0/0"
+
   PublicSubnetNames:
     Description: "Name Tags for Subnets"
     Type: CommaDelimitedList
     Default: "PublicSubnet1, PublicSubnet2, PublicSubnet3"
+
   PrivateSubnetNames:
     Description: "Name Tags for Subnets"
     Type: CommaDelimitedList
     Default: "PrivateSubnet1, PrivateSubnet2, PrivateSubnet3"
+
   PublicRouteTableName:
     Description: "Name Tag for Public Route Table"
     Type: String
     Default: "PublicRouteTable"
+
   PrivateRouteTableName:
     Description: "Name Tag for Private Route Table"
     Type: String
     Default: "PrivateRouteTable"
+
   InternetGatewayName:
     Description: "Name Tag for Internet Gateway"
     Type: String
     Default: "InternetGateway"
+
   AppSecurityGroup:
     Description: "Name Tag for Application Security Group"
     Type: String
     Default: "application"
+
   DBSecurityGroupName:
     Description: "Name Tag for DB Security Group"
     Type: String
     Default: "database"
+
+  LBSecurityGroup:
+    Description: "Name Tag for LB Security Group"
+    Type: String
+    Default: "load balancer"
+
   AmiID:
     Description: "AMI ID for Instance"
     Type: String
+
   EC2InstanceName:
     Description: "Instance Name"
     Type: String
-    Default: "NodeApp"
+    Default: "CSYE6225-CloudApplication"
+
   InstanceType:
     Description: EC2 instance Type
     Type: String
     Default: t2.micro
+
   S3BucketName:
     Description: "S3 Bucket Name"
     Type: String
-    Default: dev
+    Default: demo
+
   Ipv4Cidr:
     Description: "AMI ID for Instance"
     Type: String
     Default: "0.0.0.0/0"
-  Ipv6Cidr:
-    Description: "AMI ID for Instance"
-    Type: String
-    Default: "::/0"
+
   ProfileName:
     Default: demo
     Type: String
-    Description: Dev/Demo(Prod)
+
   myLaunchTemplateVersionNumber:
     Type: String
     Default: "1.0"
+
   KeyName:
     Type: String
     Default: "testkey"
+
   DNSName:
     Type: String
     Default: "demo.chinmayashtikar.me."
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -92,17 +112,20 @@ Resources:
       Tags: 
       - Key: Name
         Value: !Ref AWS::StackName
+
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
       - Key: Name
         Value: !Ref InternetGatewayName
+
   InternetGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
+
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -119,6 +142,7 @@ Resources:
         Value: !Select [0, !Ref PublicSubnetNames]
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -135,6 +159,7 @@ Resources:
         Value: !Select [1, !Ref PublicSubnetNames]
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PublicSubnet3:
     Type: AWS::EC2::Subnet
     Properties:
@@ -151,6 +176,7 @@ Resources:
         Value: !Select [2, !Ref PublicSubnetNames]
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -167,6 +193,7 @@ Resources:
         Value: !Select [0, !Ref PrivateSubnetNames]
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -183,6 +210,7 @@ Resources:
         Value: !Select [1, !Ref PrivateSubnetNames]
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PrivateSubnet3:
     Type: AWS::EC2::Subnet
     Properties:
@@ -199,6 +227,7 @@ Resources:
         Value: !Select [2, !Ref PrivateSubnetNames]
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -209,6 +238,7 @@ Resources:
         Value: !Ref PublicRouteTableName
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -219,6 +249,7 @@ Resources:
         Value: !Ref PrivateRouteTableName
       - Key: VPC Name
         Value: !Ref AWS::StackName
+
   PublicRoute:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
@@ -228,6 +259,7 @@ Resources:
       DestinationCidrBlock: !Ref PublicRouteDestinationCidrBlock
       GatewayId:
         Ref: InternetGateway
+
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -235,6 +267,7 @@ Resources:
         Ref: PublicSubnet1
       RouteTableId:
         Ref: PublicRouteTable
+
   PublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -242,6 +275,7 @@ Resources:
         Ref: PublicSubnet2
       RouteTableId:
         Ref: PublicRouteTable
+
   PublicSubnet3RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -249,6 +283,7 @@ Resources:
         Ref: PublicSubnet3
       RouteTableId:
         Ref: PublicRouteTable
+
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -256,6 +291,7 @@ Resources:
         Ref: PrivateSubnet1
       RouteTableId:
         Ref: PrivateRouteTable
+
   PrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -263,6 +299,7 @@ Resources:
         Ref: PrivateSubnet2
       RouteTableId:
         Ref: PrivateRouteTable
+
   PrivateSubnet3RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -270,6 +307,7 @@ Resources:
         Ref: PrivateSubnet3
       RouteTableId:
         Ref: PrivateRouteTable
+
   ApplicationSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -283,24 +321,15 @@ Resources:
           ToPort: 3000
           SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
         - IpProtocol: tcp
-          FromPort: 3000
-          ToPort: 3000
-          SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
-        - IpProtocol: tcp
           Description: SSH
           FromPort: 22
           ToPort: 22
           CidrIp: 
             Ref: Ipv4Cidr
-        - IpProtocol: tcp
-          Description: SSH
-          FromPort: 22
-          ToPort: 22
-          CidrIpv6:
-            Ref: Ipv6Cidr
         Tags:
         - Key: Name
           Value: !Ref AppSecurityGroup
+
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -315,20 +344,14 @@ Resources:
           CidrIp:
             Ref: Ipv4Cidr
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIpv6:
-            Ref: Ipv6Cidr
-        - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp:
             Ref: Ipv4Cidr
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIpv6:
-            Ref: Ipv6Cidr
+        Tags:
+        - Key: Name
+          Value: !Ref LBSecurityGroup
+
   DBSecurityGroup:
     DependsOn:
       - PrivateSubnet1
@@ -348,6 +371,7 @@ Resources:
         Tags:
         - Key: Name
           Value: !Ref DBSecurityGroupName
+
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Delete
@@ -385,6 +409,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref S3BucketName
+
   DBSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup' 
     Properties: 
@@ -394,11 +419,13 @@ Resources:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
         - !Ref PrivateSubnet3
+
   RDSDBParameterGroup:
     Type: 'AWS::RDS::DBParameterGroup'
     Properties:
       Description: MySQL8
       Family: mysql8.0
+
   RDS:
     Type: 'AWS::RDS::DBInstance'
     DeletionPolicy: Delete
@@ -420,6 +447,7 @@ Resources:
         Ref: DBSubnetGroup
       DBParameterGroupName:
         Ref: RDSDBParameterGroup
+
   WebAppS3Policy:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -437,6 +465,7 @@ Resources:
               -  !Sub arn:aws:s3:::${S3Bucket}/*
         Roles: 
           - !Ref IAMRole
+
   IAMRole:
     Type: 'AWS::IAM::Role' 
     Properties:
@@ -456,6 +485,7 @@ Resources:
       Path: /
       Roles: 
         - Ref: IAMRole
+
   LaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -500,12 +530,13 @@ Resources:
                   - "/"
                   - !Ref "AWS::StackId"
           - "asg_launch_config"
+
   AutoscalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      MinSize: '3'
+      MinSize: '1'
       MaxSize: '5'
-      DesiredCapacity: '3'
+      DesiredCapacity: '1'
       LaunchConfigurationName: !Ref LaunchConfig
       VPCZoneIdentifier:
       - !Ref PublicSubnet1
@@ -516,8 +547,9 @@ Resources:
       Cooldown: 60
       Tags:
         - Key: Name
-          Value: NodeAppASG
+          Value: CSYE6225-CloudApplication-ASG
           PropagateAtLaunch: "true"
+
   LoadBalancer:
     DependsOn: InternetGatewayAttachment
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -532,13 +564,14 @@ Resources:
       - !Ref PublicSubnet3
       SecurityGroups: 
       - !Ref LoadBalancerSecurityGroup
+
   CPUAlarmHigh:
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '1'
       Statistic: Average
-      Threshold: '4'
-      AlarmDescription: Alarm if CPU utilization more than 4%
+      Threshold: '10'
+      AlarmDescription: Alarm if CPU utilization more than 10%
       Period: '300'
       AlarmActions:
       - !Ref ScaleOutPolicy
@@ -548,13 +581,14 @@ Resources:
         Value: !Ref AutoscalingGroup
       ComparisonOperator: GreaterThanThreshold
       MetricName: CPUUtilization
+
   CPUAlarmLow:
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '1'
       Statistic: Average
-      Threshold: '2'
-      AlarmDescription: Alarm if CPU utilization is less than 2%
+      Threshold: '8'
+      AlarmDescription: Alarm if CPU utilization is less than 8%
       Period: '300'
       AlarmActions:
       - !Ref ScaleInPolicy
@@ -564,6 +598,7 @@ Resources:
         Value: !Ref AutoscalingGroup
       ComparisonOperator: LessThanThreshold
       MetricName: CPUUtilization
+
   ScaleOutPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
@@ -571,6 +606,7 @@ Resources:
       AutoScalingGroupName: !Ref AutoscalingGroup
       Cooldown: 60
       ScalingAdjustment: 1
+
   ScaleInPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
@@ -578,6 +614,7 @@ Resources:
       AutoScalingGroupName: !Ref AutoscalingGroup
       Cooldown: 60
       ScalingAdjustment: -1
+
   TargetGroup:
     DependsOn: LoadBalancer
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -593,6 +630,7 @@ Resources:
       Protocol: HTTP
       TargetType: instance
       VpcId: !Ref VPC
+
   LoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -602,6 +640,7 @@ Resources:
       LoadBalancerArn: !Ref LoadBalancer
       Port: 80
       Protocol: HTTP
+
   DNSRecord:
     Type: AWS::Route53::RecordSetGroup
     Properties:
@@ -613,6 +652,7 @@ Resources:
         AliasTarget:
           HostedZoneId: !GetAtt 'LoadBalancer.CanonicalHostedZoneID'
           DNSName: !GetAtt 'LoadBalancer.DNSName'
+
   CodeDeployEC2S3:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -625,10 +665,11 @@ Resources:
             - 's3:GetObject'
             - 's3:ListObject'
           Resource:
-              - arn:aws:s3:::codedeploy.chinmayashtikar.me
-              - arn:aws:s3:::codedeploy.chinmayashtikar.me/*
+              - arn:aws:s3:::codedeploy.demo.chinmayashtikar.me
+              - arn:aws:s3:::codedeploy.demo.chinmayashtikar.me/*
       Roles:
         - !Ref IAMRole
+
   GHUploadToS3:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -642,10 +683,11 @@ Resources:
             - 's3:ListObject'
             - 's3:PutObject'
           Resource:
-              - arn:aws:s3:::codedeploy.chinmayashtikar.me
-              - arn:aws:s3:::codedeploy.chinmayashtikar.me/*
+              - arn:aws:s3:::codedeploy.demo.chinmayashtikar.me
+              - arn:aws:s3:::codedeploy.demo.chinmayashtikar.me/*
       Users: 
         - ghactions-app
+
   GHCodeDeploy:
     Type: AWS::IAM::Policy
     Properties:
@@ -674,6 +716,7 @@ Resources:
               - !Join ["",["arn:aws:codedeploy:us-east-1:",!Ref "AWS::AccountId", ":deploymentconfig:CodeDeployDefault.AllAtOnce",],]
       Users:
         - ghactions-app
+
   GHEC2AMI:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -720,6 +763,7 @@ Resources:
               - '*'      
       Users:
           - ghactions-app
+
   CodeDeployServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -736,11 +780,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
       Path: "/"
+
   CodeDeployApplication:
     Type: AWS::CodeDeploy::Application
     Properties:
       ComputePlatform: Server
       ApplicationName: csye6225webapp
+      
   CodeDeployDeploymentGroup:
     Type: AWS::CodeDeploy::DeploymentGroup
     DependsOn: CodeDeployApplication 
@@ -758,5 +804,5 @@ Resources:
           - DEPLOYMENT_FAILURE
       Ec2TagFilters:
         - Key: Name
-          Value: NodeAppASG
+          Value: CSYE6225-CloudApplication-ASG
           Type: KEY_AND_VALUE
