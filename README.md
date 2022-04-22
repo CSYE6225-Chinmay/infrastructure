@@ -11,3 +11,10 @@ aws cloudformation deploy --profile demo --template-file csye6225-infra.yml --re
 ```bash
 aws cloudformation delete-stack --stack-name <insert_stack_name> --profile <insert_profile> --region <insert_region>
 ```
+4. To Import Certificate
+
+```bash
+ aws acm import-certificate --certificate fileb://Certificate.pem \
+      --certificate-chain fileb://CertificateChain.pem \
+      --private-key fileb://PrivateKey.pem 	
+```
